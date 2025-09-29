@@ -1,0 +1,35 @@
+{
+  "name": "interactive-street-modeling",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "rsbuild build",
+    "build:lib": "rslib build",
+    "dev": "rsbuild dev --open",
+    "preview": "rsbuild preview"
+  },
+  "devDependencies": {
+    "@rsbuild/core": "^1.2.16",
+    "@rslib/core": "^0.13.2",
+    "@types/lodash": "^4.17.20",
+    "@types/poisson-disk-sampling": "^2.2.4",
+    "@types/seed-random": "^2.2.4",
+    "rsbuild-plugin-glsl": "^1.0.1",
+    "typescript": "^5.8.2"
+  },
+  "dependencies": {
+    "@flatten-js/core": "^1.6.2",
+    "@observablehq/plot": "^0.6.17",
+    "@turf/turf": "^7.2.0",
+    "d3": "^7.9.0",
+    "lit": "^3.3.1",
+    "lodash": "^4.17.21",
+    "pixi-filters": "^6.1.2",
+    "pixi.js": "^8.9.1",
+    "poisson-disk-sampling": "^2.3.1",
+    "random-seed": "^0.3.0",
+    "rxjs": "^7.8.2",
+    "seed-random": "^2.2.0"
+  }
+}
