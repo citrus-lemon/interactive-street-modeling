@@ -6,6 +6,7 @@ const entry = {
   ibfv: "./src/IBFV/example",
   streamlines: "./src/streamlines/example",
   TerrainGeneration: "./src/TerrainGeneration/example",
+  reactiveVariable: "./src/reactive-variable/example",
 };
 
 export default defineConfig({
