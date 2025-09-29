@@ -9,6 +9,18 @@ const entry = {
 };
 
 export default defineConfig({
+  html: {
+    tags: [
+      {
+        tag: "link",
+        attrs: {
+          rel: "stylesheet",
+          href: "https://cdn.jsdelivr.net/npm/water.css@2/out/water.css",
+        },
+        append: true,
+      },
+    ],
+  },
   plugins: [pluginGlsl()],
   source: {
     entry,
