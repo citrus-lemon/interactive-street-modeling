@@ -23,6 +23,10 @@ export class Variable<T> {
     return this.lit();
   }
 
+  *[Symbol.iterator]() {
+    yield this.lit();
+  }
+
   lit(template?: (value: T) => unknown) {
     const frag = new DocumentFragment();
     const finshedTemplate = template ? template : (value: T) => html`${value}`;
