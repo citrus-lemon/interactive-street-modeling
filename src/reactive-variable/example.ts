@@ -1,21 +1,31 @@
 import { html, render } from "lit";
-import { block, InputVariable, variable } from ".";
+import { block, Inputs, InputVariable, variable } from ".";
 
-const a = variable(3);
-const b = a.apply((k) => `lit: ${k}`);
-const d = variable("qeqw");
-const c = block({ d, b, e: 3 }).apply(
+const numberVar = variable(3);
+const mapToStringVar = numberVar.apply((k) => `lit: ${k}`);
+const stringVar = variable("qeqw");
+const htmlTemplateVar = block({ d: stringVar, b: mapToStringVar, e: 3 }).apply(
   ({ d, b, e }) => html`d@${d} b${b} e ${e}`
 );
-const q = variable(false);
-const sel: InputVariable<"bfs" | "dfs"> = variable("bfs");
+const booleanVar = variable(false);
+const selectionVar: InputVariable<"bfs" | "dfs"> = variable("bfs");
+const cachedVar = block({ numberVar, stringVar })
+  .apply(({ numberVar, stringVar }) => `${stringVar} + ${numberVar}`)
+  .cached();
+
+// Inputs
+const rangeInput = Inputs.range([0, 100], { label: "qs" });
+const radioInput = Inputs.radio(["a", "b"], { label: "radio", value: "a" });
 
 render(
-  html` <div>${a.input({ label: "as", min: "3", max: "15", step: "2" })}</div>
-    <div>${d.input({ label: "asdf" })}</div>
-    <div>${q.input({ label: "qq" })}</div>
-    <div>${sel.input({ selection: ["bfs", "dfs"] })}</div>
-
-    <div>${c} - - ${sel}</div>`,
+  html` <div>
+      ${numberVar.input({ label: "as", min: "3", max: "15", step: "2" })}
+    </div>
+    <div>${stringVar.input({ label: "asdf" })}</div>
+    <div>${booleanVar.input({ label: "qq" })}</div>
+    <div>${selectionVar.input({ selection: ["bfs", "dfs"] })}</div>
+    ${rangeInput.input()} ${rangeInput} ${radioInput.input()} ${radioInput}
+    <div>${cachedVar}</div>
+    <div>${htmlTemplateVar} - - ${selectionVar}</div>`,
   document.querySelector("#root") as HTMLElement
 );

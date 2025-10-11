@@ -73,13 +73,15 @@ export class Streamlines {
     this.options.timeStep =
       protoOptions.timeStep > 0 ? protoOptions.timeStep : 0.01;
     this.options.stepsPerIteration =
-      protoOptions.stepsPerIteration > 0 ? protoOptions.stepsPerIteration : 10;
+      (protoOptions.stepsPerIteration ?? 0) > 0
+        ? protoOptions.stepsPerIteration
+        : 10;
     this.options.maxTimePerIteration =
-      protoOptions.maxTimePerIteration > 0
+      (protoOptions.maxTimePerIteration ?? 0) > 0
         ? protoOptions.maxTimePerIteration
         : 1000;
 
-    this.stepsPerIteration = this.options.stepsPerIteration;
+    this.stepsPerIteration = this.options.stepsPerIteration ?? 10;
     this.resolve;
     this.state = Streamlines.STATE_INIT;
     this.finishedStreamlineIntegrators = [];
@@ -100,11 +102,14 @@ export class Streamlines {
   }
 
   run() {
-    if (this.running) return;
-    this.running = true;
-    this.nextTimeout = setTimeout(this.nextStep.bind(this), 0);
-
-    return new Promise(this.assignResolve.bind(this));
+    if (this.options.async) {
+      if (this.running) return;
+      this.running = true;
+      this.nextTimeout = setTimeout(this.nextStep.bind(this), 0);
+      return new Promise(this.assignResolve.bind(this));
+    } else {
+      this.nextStep();
+    }
   }
 
   assignResolve(pResolve: (value: Config | PromiseLike<Config>) => void) {
@@ -118,7 +123,7 @@ export class Streamlines {
 
   nextStep() {
     if (this.disposed) return;
-    var maxTimePerIteration = this.options.maxTimePerIteration;
+    var maxTimePerIteration = this.options.maxTimePerIteration ?? 1000;
     var start = window.performance.now();
 
     for (var i = 0; i < this.stepsPerIteration; ++i) {

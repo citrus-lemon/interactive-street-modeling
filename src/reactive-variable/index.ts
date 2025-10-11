@@ -1,2 +1,2 @@
 export * from "./core";
-import "./input";
+export * from "./input";

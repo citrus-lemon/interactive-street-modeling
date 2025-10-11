@@ -1,5 +1,5 @@
-import { html, TemplateResult } from "lit";
-import { InputVariable } from "./core";
+import { html, nothing, TemplateResult } from "lit";
+import { InputVariable, variable } from "./core";
 import { spread } from "@open-wc/lit-helpers";
 
 type InputComponentOptionType = Partial<HTMLInputElement> & {
@@ -9,7 +9,7 @@ type InputComponentOptionType = Partial<HTMLInputElement> & {
 
 declare module "./core" {
   interface InputVariable<T> {
-    input(options?: InputComponentOptionType): TemplateResult<any>;
+    input(options?: InputComponentOptionType): any;
   }
 }
 
@@ -93,5 +93,91 @@ export function inputComponent<T>(
     </label>`;
   } else {
     return html`Variable ${val.view}`;
+  }
+}
+
+class CustomInputVariable<T> extends InputVariable<T> {
+  constructor(
+    value: T,
+    private inputGenerator: (val: InputVariable<T>) => Node
+  ) {
+    super(value);
+  }
+  override input(): any {
+    return this.inputGenerator(this);
+  }
+}
+
+interface InputsRangeOption {
+  value?: number;
+  step?: number;
+  label?: string;
+}
+interface RadioRangeOption<T> {
+  label?: string;
+  value?: T;
+}
+
+export class Inputs {
+  static range(r: [number, number], opt?: InputsRangeOption) {
+    return new CustomInputVariable(opt?.value ?? r[0], (self) =>
+      self.lit(
+        (value) => html`
+          <form>
+            <label> ${opt?.label} </label>
+            <input
+              type="number"
+              min=${r[0]}
+              max=${r[1]}
+              .value=${String(value)}
+              step=${opt?.step ?? 1}
+              @change=${(e: Event) => {
+                const target = e.target as HTMLInputElement;
+                self.value = Number(target.value);
+              }}
+              name="number"
+            />
+            <input
+              type="range"
+              min=${r[0]}
+              max=${r[1]}
+              .value=${String(value)}
+              step=${opt?.step ?? 1}
+              @change=${(e: Event) => {
+                const target = e.target as HTMLInputElement;
+                self.value = Number(target.value);
+              }}
+              name="range"
+            />
+          </form>
+        `
+      )
+    );
+  }
+
+  static radio<T extends string>(
+    options: T[],
+    opt?: RadioRangeOption<T>
+  ): CustomInputVariable<T> {
+    return new CustomInputVariable(opt?.value ?? ("" as T), (self) =>
+      self.lit(
+        (value) => html`
+          <form>
+            <label>${opt?.label}</label>
+            <select
+              .value=${value as string}
+              @change=${(e: Event) => {
+                self.value = (e.target as HTMLSelectElement).value as T;
+              }}
+            >
+              ${options.map(
+                (option) =>
+                  html`<option value=${option as string}>${option}</option>`
+              )}
+            </select>
+          </form>
+        `
+      )
+    );
   }
 }

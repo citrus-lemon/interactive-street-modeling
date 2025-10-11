@@ -6,6 +6,172 @@ import { computeStreamlines } from "./Streamlines";
 import Vector from "./Vector";
 import * as Plot from "@observablehq/plot";
 import PoissonDiskSampling from "poisson-disk-sampling";
+import { block, Inputs, variable } from "../reactive-variable";
+import { VectorField } from "./Config";
+
+const seedX = Inputs.range([0, 1], { value: 0.5, step: 0.01, label: "Seed X" });
+const seedY = Inputs.range([0, 1], { value: 0.5, step: 0.01, label: "Seed Y" });
+const dSep = Inputs.range([0, 1], {
+  value: 0.1,
+  step: 0.01,
+  label: "sep distance",
+});
+const dTest = Inputs.range([0, 0.3], {
+  value: 0.05,
+  step: 0.005,
+  label: "test distance",
+});
+const timeStep = Inputs.range([0, 0.1], {
+  value: 0.01,
+  step: 0.001,
+  label: "time step",
+});
+const seedDirection = Inputs.radio(["center", "flow"], {
+  label: "Seeding Directions",
+  value: "flow",
+});
+const seedStreamlinePolicy = Inputs.radio(["bfs", "dfs"], {
+  label: "Seeding Streamline Order",
+  value: "bfs",
+});
+const fixVectorField = variable(false);
+const switchingFields = variable(false);
+
+const options = block({
+  dSep,
+  dTest,
+  timeStep,
+  seedDirection,
+  seedStreamlinePolicy,
+  fixVectorField,
+});
+
+const seed = block({ x: seedX, y: seedY })
+  .apply(({ x, y }) => new Vector(x, y))
+  .cached();
+
+function vectorWrap(sampler: Sampler) {
+  return ({ x, y }: Vector) => new Vector(sampler(x, y));
+}
+
+const sampler: Sampler = (x: number, y: number) => [x, y];
+
+const rotate = (sampler: Sampler) => (x: number, y: number) => {
+  let [xx, yy] = sampler(x, y);
+  return [-yy, xx] as [number, number];
+};
+
+const lines = block({ options, switchingFields, seed }).apply(
+  ({ options, switchingFields, seed }) => {
+    let e: (Vector[] & { seedPoint: Vector })[] = [];
+    let majorField: VectorField & { tag?: string } = vectorWrap(sampler);
+    let minorField: VectorField & { tag?: string } = vectorWrap(
+      rotate(sampler)
+    );
+    majorField.tag = "major";
+    minorField.tag = "minor";
+    let majorGrid;
+    let minorGrid;
+    const csl = computeStreamlines({
+      vectorField: majorField,
+      boundingBox: { left: 0, top: 0, width: 1, height: 1 },
+      ...options,
+      onStreamlineAdded(points, config) {
+        // console.log(config.vectorField.tag)
+        e.push(points as Vector[] & { seedPoint: Vector });
+        if (switchingFields) {
+          majorGrid = csl.grid.cells;
+          minorGrid ||= new Map();
+          [majorGrid, minorGrid] = [minorGrid, majorGrid];
+          [majorField, minorField] = [minorField, majorField];
+          config.vectorField = majorField;
+          csl.grid.cells = majorGrid;
+        }
+      },
+      seed,
+    });
+    csl.run();
+    return e;
+  }
+);
+
+const state = lines
+  .apply(function* animateState(lines) {
+    const growSpeed = 1;
+    for (let line = 0; line < lines.length; ++line) {
+      const seed = lines[line].indexOf(lines[line].seedPoint);
+      for (let grow = 0; grow < lines[line].length + 1; grow += growSpeed) {
+        yield { line, grow, seed };
+      }
+    }
+    yield { line: lines.length, grow: 0, finish: true };
+  })
+  .apply((generator) => Array.from(generator));
+
+const plot = block({ lines, state }).apply(({ lines, state }) =>
+  Plot.plot({
+    inset: 6,
+    width: Math.min(600, 600),
+    aspectRatio: 1,
+    // axis: null,
+    marks: [
+      // PlotSampler(sampler, {
+      //   stroke: "#eee",
+      //   shape: "sword" as Plot.VectorShapeName,
+      // }),
+      Plot.dot(
+        lines.slice(0, state.line + 1).map((line) => line.seedPoint),
+        { x: "x", y: "y" }
+      ),
+      Plot.text(
+        lines.slice(0, state.line + 1).map((line) => line.seedPoint),
+        { x: "x", y: "y", dy: -8 }
+      ),
+      // PlotSampler(rotate(sampler), { stroke: "#eee" }),
+      // Plot.line(trace(sampler, [0, 0.5], { scale: 0.01 }), { curve: "natural" }),
+      Plot.line(
+        lines
+          .slice(0, state.line)
+          .flatMap((line, index) => line.map((point) => ({ index, ...point }))),
+        {
+          x: "x",
+          y: "y",
+          z: "index",
+          curve: "natural",
+        }
+      ),
+      state.finish
+        ? undefined
+        : Plot.line(
+            lines[state.line].slice(
+              ...(state.grow > lines[state.line].length - state.seed
+                ? [lines[state.line].length - state.grow]
+                : [state.seed, state.seed + state.grow])
+            ),
+            {
+              x: "x",
+              y: "y",
+              curve: "natural",
+              strokeWidth: 3,
+            }
+          ),
+      Plot.tip(
+        lines.slice(0, state.line + 1).map((line) => line.seedPoint),
+        Plot.pointer({ x: "x", y: "y", title: (a, i) => `${i}` })
+      ),
+      Plot.arrow(
+        lines.slice(1, state.line + 1),
+        Plot.pointer({
+          x1: (a) => a.seedPoint.originPoint.x,
+          y1: (a) => a.seedPoint.originPoint.y,
+          x2: (a) => a.seedPoint.x,
+          y2: (a) => a.seedPoint.y,
+          stroke: "#aaa",
+        })
+      ),
+    ],
+  })
+);
 
 render(
   html`<streamlines-element></streamlines-element>`,
@@ -292,70 +458,7 @@ export class StreamlinesElement extends LitElement {
   }
 
   plot() {
-    return Plot.plot({
-      inset: 6,
-      width: Math.min(this.canvasElement?.width ?? 600, 600),
-      aspectRatio: 1,
-      // axis: null,
-      marks: [
-        // PlotSampler(sampler, {
-        //   stroke: "#eee",
-        //   shape: "sword" as Plot.VectorShapeName,
-        // }),
-        Plot.dot(
-          lines.slice(0, state.line + 1).map((line) => line.seedPoint),
-          { x: "x", y: "y" }
-        ),
-        Plot.text(
-          lines.slice(0, state.line + 1).map((line) => line.seedPoint),
-          { x: "x", y: "y", dy: -8 }
-        ),
-        // PlotSampler(rotate(sampler), { stroke: "#eee" }),
-        // Plot.line(trace(sampler, [0, 0.5], { scale: 0.01 }), { curve: "natural" }),
-        Plot.line(
-          lines
-            .slice(0, state.line)
-            .flatMap((line, index) =>
-              line.map((point) => ({ index, ...point }))
-            ),
-          {
-            x: "x",
-            y: "y",
-            z: "index",
-            curve: "natural",
-          }
-        ),
-        state.finish
-          ? undefined
-          : Plot.line(
-              lines[state.line].slice(
-                ...(state.grow > lines[state.line].length - state.seed
-                  ? [lines[state.line].length - state.grow]
-                  : [state.seed, state.seed + state.grow])
-              ),
-              {
-                x: "x",
-                y: "y",
-                curve: "natural",
-                strokeWidth: 3,
-              }
-            ),
-        Plot.tip(
-          lines.slice(0, state.line + 1).map((line) => line.seedPoint),
-          Plot.pointer({ x: "x", y: "y", title: (a, i) => `${i}` })
-        ),
-        Plot.arrow(
-          lines.slice(1, state.line + 1),
-          Plot.pointer({
-            x1: (a) => a.seedPoint.originPoint.x,
-            y1: (a) => a.seedPoint.originPoint.y,
-            x2: (a) => a.seedPoint.x,
-            y2: (a) => a.seedPoint.y,
-            stroke: "#aaa",
-          })
-        ),
-      ],
-    });
+    return 2;
   }
 }
 
@@ -366,6 +469,7 @@ declare global {
 }
 
 type Sampler = (x: number, y: number) => [number, number];
+
 function PlotSampler(sampler: Sampler, options?: Plot.VectorOptions) {
   const swordShape = {
     draw(context: CanvasRenderingContext2D, l: number, _r: number) {

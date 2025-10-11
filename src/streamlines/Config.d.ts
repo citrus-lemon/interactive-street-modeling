@@ -1,19 +1,22 @@
 import type Vector from "./Vector";
 
 declare interface Config {
-  maxTimePerIteration: number;
-  stepsPerIteration: number;
+  maxTimePerIteration?: number;
+  stepsPerIteration?: number;
   dTest: number;
-  forwardOnly: boolean;
+  forwardOnly?: boolean;
   vectorField: VectorField;
-  seedArray: Vector[];
+  seedArray?: Vector[];
   boundingBox: BoundingBox;
   timeStep: number;
   dSep: number;
-  seed: Vector | Vector[];
+  seed?: Vector | Vector[];
   onPointAdded?(from: Vector, to: Vector, config: Config): boolean | undefined;
   onStreamlineAdded?(points: Vector[], config: Config);
   random?(): number;
+  seedStreamlinePolicy?: "bfs" | "dfs";
+  seedDirection?: "center" | "flow";
+  async?: boolean;
 }
 
 declare interface VectorField {

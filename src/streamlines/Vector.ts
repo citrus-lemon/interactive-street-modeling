@@ -1,6 +1,10 @@
+declare interface Vector {
+  x: number;
+  y: number;
+}
 class Vector {
-  declare x: number;
-  declare y: number;
+  x: number;
+  y: number;
   constructor(x: number, y: number);
   constructor(point: [number, number]);
   constructor(x_or_arr: number | [number, number], y?: number) {
