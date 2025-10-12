@@ -301,7 +301,7 @@ export class Inputs {
     this.initialized = true;
 
     // Register "range" input type
-    inputRegistry.register<number>("range", (val, value, opt) => {
+    inputRegistry.register<number>("range", (val, _, opt) => {
       return val.lit(
         (value) => html`
           <label> ${opt?.label} </label>
@@ -332,7 +332,7 @@ export class Inputs {
     });
 
     // Register "slider" input type
-    inputRegistry.register<number>("slider", (val, value, opt) => {
+    inputRegistry.register<number>("slider", (val, _, opt) => {
       return val.lit(
         (value) => html`
           <label>
@@ -354,7 +354,7 @@ export class Inputs {
     });
 
     // Register "radio" input type
-    inputRegistry.register<string>("radio", (val, value, opt) => {
+    inputRegistry.register<string>("radio", (val, _, opt) => {
       return val.lit(
         (value) => html`
           <label>${opt?.label}</label>
@@ -374,7 +374,7 @@ export class Inputs {
     });
 
     // Register "color" input type
-    inputRegistry.register<string>("color", (val, value, opt) => {
+    inputRegistry.register<string>("color", (val, _, opt) => {
       return val.lit(
         (value) => html`
           <label>
@@ -393,7 +393,7 @@ export class Inputs {
     });
 
     // Register "textarea" input type
-    inputRegistry.register<string>("textarea", (val, value, opt) => {
+    inputRegistry.register<string>("textarea", (val, _, opt) => {
       return val.lit(
         (value) => html`
           <label>
@@ -412,7 +412,7 @@ export class Inputs {
     });
 
     // Register "button" input type
-    inputRegistry.register<any>("button", (val, value, opt) => {
+    inputRegistry.register<any>("button", (val, _, opt) => {
       return val.lit(
         (value) => html`
           <button
