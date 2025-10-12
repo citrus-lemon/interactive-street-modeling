@@ -1,5 +1,7 @@
 import { html, render } from "lit";
 import { block, Inputs, InputVariable, variable } from ".";
+// Import mixins to enable additional methods (log, tap, map, filter, etc.)
+import "./mixins";
 
 // ============================================
 // 1. BASIC VARIABLES
@@ -66,8 +68,7 @@ const expensiveComputation = numberVar
 // ============================================
 
 // String-based selection
-const algorithmVar: InputVariable<"bfs" | "dfs" | "dijkstra"> =
-  variable("bfs");
+const algorithmVar: InputVariable<"bfs" | "dfs" | "dijkstra"> = variable("bfs");
 
 // Selection with custom display names
 const themeVar: InputVariable<"light" | "dark" | "auto"> = variable("light");
@@ -192,7 +193,35 @@ const itemList = itemCount.apply((count) =>
 );
 
 // ============================================
-// 12. REACTIVE COMPONENT INTEGRATION
+// 12. MIXIN FEATURES
+// ============================================
+
+// Debug mixin - log changes to console
+variable(0).debug(); // Logs every change with count
+
+// Array mixins - functional array operations
+const numbers = variable([1, 2, 3, 4, 5]);
+const doubled = numbers.map((n) => n * 2);
+const evens = numbers.filter((n) => n % 2 === 0);
+const sumFromReduce = numbers.reduce((acc, n) => acc + n, 0);
+const arrayLength = numbers.length;
+
+// Chaining mixins together
+const processedData = variable([10, 20, 30, 40, 50])
+  .tap((arr) => console.log("Original array:", arr))
+  .map((n) => n / 10)
+  .filter((n) => n >= 2)
+  .log("Processed data");
+
+// Object mixin - destructure object into separate variables
+const { sum, difference, average } = mathOperations.destructure();
+
+// Or pick specific properties
+const product = mathOperations.pick("product");
+const { quotient } = mathOperations.picks("quotient");
+
+// ============================================
+// 13. REACTIVE COMPONENT INTEGRATION
 // ============================================
 
 // Variables can be embedded directly in templates using ${variable}
@@ -396,19 +425,80 @@ render(
       `
     )}
 
-    <h2>12. Reactive Component Integration</h2>
+    <h2>12. Mixin Features (Optional Extensions)</h2>
+    <p>
+      Mixins add powerful methods to variables without bloating the core API.
+      Import <code>'./mixins'</code> to enable debug and array operations.
+    </p>
+
+    <h3>Debug Mixin</h3>
+    <p>
+      Use <code>.log()</code>, <code>.tap()</code>, and <code>.debug()</code>
+      to inspect variable changes. Check the console for output.
+    </p>
+    ${numbers.input({ label: "Edit Array (JSON)" })}
+    <p>Open console to see debug output when array changes.</p>
+
+    <h3>Array Mixin Operations</h3>
+    <p>
+      Array variables gain functional programming methods like map, filter,
+      reduce.
+    </p>
+    <p>
+      Original: ${numbers.apply((arr) => JSON.stringify(arr))}<br />
+      Doubled: ${doubled.apply((arr) => JSON.stringify(arr))}<br />
+      Evens only: ${evens.apply((arr) => JSON.stringify(arr))}<br />
+      Sum: ${sumFromReduce}<br />
+      Length: ${arrayLength}
+    </p>
+
+    <h3>Method Chaining</h3>
+    <p>
+      Mixins preserve method chaining for fluent APIs:
+      <code>.tap().map().filter().log()</code>
+    </p>
+    <p>
+      Processed data result:
+      ${processedData.apply((arr) => JSON.stringify(arr))}
+    </p>
+
+    <h3>Object Destructuring</h3>
+    <p>
+      Use <code>.destructure()</code> to split an object variable into
+      individual variables for each property. Perfect for computed object
+      results!
+    </p>
+    <p>
+      Instead of accessing properties like
+      <code>mathOperations.apply(ops => ops.sum)</code>, destructure once:
+    </p>
+    <p>
+      Sum (destructured): ${sum}<br />
+      Difference (destructured): ${difference}<br />
+      Average (destructured): ${average}<br />
+      Product (picked): ${product}<br />
+      Quotient (picked): ${quotient}
+    </p>
+    <p>
+      <em
+        >Each property is now a separate reactive Variable that updates
+        independently!</em
+      >
+    </p>
+
+    <h2>13. Reactive Component Integration</h2>
     <p>
       Variables can be directly embedded in templates using
       <code>\${variable}</code> syntax. The iterator protocol enables seamless
       reactive component rendering without extra boilerplate.
     </p>
     <p>
-      Try adjusting the rotation angle and background color below to see the
-      div update in real-time:
+      Try adjusting the rotation angle and background color below to see the div
+      update in real-time:
     </p>
     ${sliderVar.input()} ${bgColorVar.input()} ${rotationDemo}
 
-    <h2>13. Combining Multiple Variables</h2>
+    <h2>14. Combining Multiple Variables</h2>
     <p>
       Multiple reactive variables work together seamlessly. Change any input
       above and watch related values update across the entire page.
