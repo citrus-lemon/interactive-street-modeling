@@ -17,6 +17,7 @@ Our goal is to create a clean, understandable, and configurable playground where
 The map representation uses **two interconnected graphs** that are duals of each other:
 
 1. **Delaunay triangulation** (polygon centers):
+
    - Nodes: Centers of Voronoi polygons (red points)
    - Edges: Connect adjacent polygon centers
    - Use for: Adjacency, pathfinding, region properties
@@ -31,6 +32,7 @@ Every edge in one graph corresponds to exactly one edge in the other. This duali
 ### Block (Mesh Unit)
 
 A "block" is the fundamental spatial unit that can refer to either:
+
 - A **Voronoi polygon** (in the Delaunay graph)
 - A **Triangle** (formed by polygon corners)
 
@@ -87,11 +89,13 @@ Both options available for experimentation:
 ### 3. Initial Terrain
 
 #### Amit's "Backwards from Constraints" Approach:
+
 1. **Define coastline first** using shape functions (radial, noise, drawn shapes)
 2. **Set elevation as distance from coast** (guarantees no local minima)
 3. **Redistribute elevations** to match desired distribution (e.g., more lowlands than mountains)
 
 #### Alternative approaches:
+
 - **Random heights** for prototyping
 - **Geometric primitives**: Slopes, cones, blobs
 - **Interactive placement** (from reference/terrain)
@@ -132,17 +136,20 @@ Both options available for experimentation:
 ### 5. Feature Detection
 
 #### Water Assignment (Amit's approach):
+
 1. **Assign water/land to corners** based on shape function
 2. **Assign to polygons** based on fraction of water corners
 3. **Flood fill from edges** to distinguish ocean from lakes
 
 #### Rivers (Amit's approach):
+
 - Start at random mountain corners
 - **Flow corner-to-corner** following downslope
 - Multiple rivers can merge (accumulate flow)
 - River width = sqrt(flow volume)
 
 #### Natural Features:
+
 - **Ocean**: Water connected to map edge
 - **Lakes**: Water surrounded by land
 - **Beaches**: Land polygons adjacent to ocean
@@ -183,45 +190,45 @@ interface Point {
 
 interface Edge {
   // Connects two centers (Delaunay edge)
-  c0: number;  // center/polygon 0
-  c1: number;  // center/polygon 1
+  c0: number; // center/polygon 0
+  c1: number; // center/polygon 1
 
   // Connects two corners (Voronoi edge)
-  v0: number;  // corner/vertex 0
-  v1: number;  // corner/vertex 1
+  v0: number; // corner/vertex 0
+  v1: number; // corner/vertex 1
 }
 
 interface DualMesh {
   // Polygon centers (Delaunay triangulation)
   centers: Point[];
-  centerNeighbors: number[][];  // adjacency lists
+  centerNeighbors: number[][]; // adjacency lists
 
   // Polygon corners (Voronoi vertices)
   corners: Point[];
-  cornerNeighbors: number[][];  // adjacency lists
+  cornerNeighbors: number[][]; // adjacency lists
 
   // Edges connect both graphs
   edges: Edge[];
 
   // Properties - choose appropriate storage
-  centerElevation: number[];     // Averaged from corners
-  cornerElevation: number[];     // Primary elevation storage
-  cornerMoisture: number[];      // Moisture on corners
-  centerBiome: string[];         // Biomes on centers
+  centerElevation: number[]; // Averaged from corners
+  cornerElevation: number[]; // Primary elevation storage
+  cornerMoisture: number[]; // Moisture on corners
+  centerBiome: string[]; // Biomes on centers
   riverFlow: Map<number, number>; // Edge id → flow volume
 }
 ```
 
 ### Property Placement Strategy (Amit's Discoveries)
 
-| Property | Store On | Reason |
-|----------|----------|---------|
-| Elevation | Corners | Creates natural ridges/valleys |
-| Water/Land | Corners first, then centers | Better coastline generation |
-| Rivers | Corner-to-corner edges | Smoother, more natural flow |
-| Moisture | Corners | Propagates from water features |
-| Biomes | Centers | Averaged from corner properties |
-| Cities | Centers | Natural for regions |
+| Property   | Store On                    | Reason                          |
+| ---------- | --------------------------- | ------------------------------- |
+| Elevation  | Corners                     | Creates natural ridges/valleys  |
+| Water/Land | Corners first, then centers | Better coastline generation     |
+| Rivers     | Corner-to-corner edges      | Smoother, more natural flow     |
+| Moisture   | Corners                     | Propagates from water features  |
+| Biomes     | Centers                     | Averaged from corner properties |
+| Cities     | Centers                     | Natural for regions             |
 
 ### Performance Considerations
 
@@ -235,15 +242,17 @@ interface DualMesh {
 ### Value Redistribution (Amit's Technique)
 
 Essential for consistent map characteristics:
+
 ```typescript
 function redistribute(values: number[], mapFunction: (x: number) => number) {
   // 1. Sort values and track original indices
-  const sorted = values.map((v, i) => ({value: v, index: i}))
-                       .sort((a, b) => a.value - b.value);
+  const sorted = values
+    .map((v, i) => ({ value: v, index: i }))
+    .sort((a, b) => a.value - b.value);
 
   // 2. Assign new values based on position in sorted order
   sorted.forEach((item, i) => {
-    const x = i / (sorted.length - 1);  // Normalize to [0,1]
+    const x = i / (sorted.length - 1); // Normalize to [0,1]
     values[item.index] = mapFunction(x);
   });
 }
@@ -312,6 +321,7 @@ function redistribute(values: number[], mapFunction: (x: number) => number) {
 ### 5. Mesh Choice
 
 Based on Amit's experience:
+
 - **Recommend: Voronoi with dual Delaunay** structure
 - Store different properties on appropriate graph
 - Corner graph better for continuous values (elevation, moisture)
@@ -319,13 +329,13 @@ Based on Amit's experience:
 
 ## Algorithm Comparison
 
-| Aspect | Amit's Approach | mewo's Approach | Our Hybrid |
-|--------|-----------------|-----------------|------------|
-| **Mesh** | Dual Voronoi/Delaunay | Triangular (dual) | Start with dual Voronoi |
-| **Elevation** | Distance from coast | Primitives + erosion | Both options |
-| **Rivers** | Corner-to-corner | Physical simulation | Corner-based |
-| **Philosophy** | Work backwards from goals | Physical simulation | Configurable |
-| **Complexity** | Medium | High | Adjustable |
+| Aspect         | Amit's Approach           | mewo's Approach      | Our Hybrid              |
+| -------------- | ------------------------- | -------------------- | ----------------------- |
+| **Mesh**       | Dual Voronoi/Delaunay     | Triangular (dual)    | Start with dual Voronoi |
+| **Elevation**  | Distance from coast       | Primitives + erosion | Both options            |
+| **Rivers**     | Corner-to-corner          | Physical simulation  | Corner-based            |
+| **Philosophy** | Work backwards from goals | Physical simulation  | Configurable            |
+| **Complexity** | Medium                    | High                 | Adjustable              |
 
 ## Implementation Priority
 
