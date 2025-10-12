@@ -294,145 +294,10 @@ interface TextareaOption {
 }
 
 export class Inputs {
-  private static initialized = false;
-
-  private static init() {
-    if (this.initialized) return;
-    this.initialized = true;
-
-    // Register "range" input type
-    inputRegistry.register<number>("range", (val, _, opt) => {
-      return val.lit(
-        (value) => html`
-          <label> ${opt?.label} </label>
-          <input
-            type="number"
-            min=${opt?.min ?? 0}
-            max=${opt?.max ?? 100}
-            .value=${String(value)}
-            step=${opt?.step ?? 1}
-            @input=${(e: Event) => {
-              const target = e.target as HTMLInputElement;
-              val.value = Number(target.value);
-            }}
-          />
-          <input
-            type="range"
-            min=${opt?.min ?? 0}
-            max=${opt?.max ?? 100}
-            .value=${String(value)}
-            step=${opt?.step ?? 1}
-            @input=${(e: Event) => {
-              const target = e.target as HTMLInputElement;
-              val.value = Number(target.value);
-            }}
-          />
-        `
-      );
-    });
-
-    // Register "slider" input type
-    inputRegistry.register<number>("slider", (val, _, opt) => {
-      return val.lit(
-        (value) => html`
-          <label>
-            ${opt?.label}
-            ${opt?.showValue !== false ? html`<span>${value}</span>` : nothing}
-            <input
-              type="range"
-              min=${opt?.min ?? 0}
-              max=${opt?.max ?? 100}
-              .value=${String(value)}
-              step=${opt?.step ?? 1}
-              @input=${(e: Event) => {
-                val.value = Number((e.target as HTMLInputElement).value);
-              }}
-            />
-          </label>
-        `
-      );
-    });
-
-    // Register "radio" input type
-    inputRegistry.register<string>("radio", (val, _, opt) => {
-      return val.lit(
-        (value) => html`
-          <label>${opt?.label}</label>
-          <select
-            .value=${value as string}
-            @change=${(e: Event) => {
-              val.value = (e.target as HTMLSelectElement).value;
-            }}
-          >
-            ${opt?.options.map(
-              (option: string) =>
-                html`<option value=${option}>${option}</option>`
-            )}
-          </select>
-        `
-      );
-    });
-
-    // Register "color" input type
-    inputRegistry.register<string>("color", (val, _, opt) => {
-      return val.lit(
-        (value) => html`
-          <label>
-            ${opt?.label}
-            <input
-              type="color"
-              .value=${value}
-              @input=${(e: Event) => {
-                val.value = (e.target as HTMLInputElement).value;
-              }}
-            />
-            <span>${value}</span>
-          </label>
-        `
-      );
-    });
-
-    // Register "textarea" input type
-    inputRegistry.register<string>("textarea", (val, _, opt) => {
-      return val.lit(
-        (value) => html`
-          <label>
-            ${opt?.label}
-            <textarea
-              .value=${value}
-              @input=${(e: Event) => {
-                val.value = (e.target as HTMLTextAreaElement).value;
-              }}
-              rows=${opt?.rows ?? 5}
-              cols=${opt?.cols ?? 50}
-            ></textarea>
-          </label>
-        `
-      );
-    });
-
-    // Register "button" input type
-    inputRegistry.register<any>("button", (val, _, opt) => {
-      return val.lit(
-        (value) => html`
-          <button
-            @click=${() => {
-              val.value = opt.onClick();
-            }}
-          >
-            ${opt?.label}
-          </button>
-          ${value !== null ? html`<span>Result: ${value}</span>` : nothing}
-        `
-      );
-    });
-  }
-
   static range(
     r: [number, number],
     opt?: InputsRangeOption
   ): InputVariable<number> {
-    this.init();
     return variable(opt?.value ?? r[0]).useInput("range", {
       min: r[0],
       max: r[1],
@@ -445,7 +310,6 @@ export class Inputs {
     r: [number, number],
     opt?: SliderOption
   ): InputVariable<number> {
-    this.init();
     return variable(opt?.value ?? r[0]).useInput("slider", {
       min: r[0],
       max: r[1],
@@ -459,7 +323,6 @@ export class Inputs {
     options: T[],
     opt?: RadioRangeOption<T>
   ): InputVariable<T> {
-    this.init();
     return variable(opt?.value ?? ("" as T)).useInput("radio", {
       options,
       label: opt?.label,
@@ -467,14 +330,12 @@ export class Inputs {
   }
 
   static color(opt?: ColorOption): InputVariable<string> {
-    this.init();
     return variable(opt?.value ?? "#000000").useInput("color", {
       label: opt?.label,
     });
   }
 
   static textarea(opt?: TextareaOption): InputVariable<string> {
-    this.init();
     return variable(opt?.value ?? "").useInput("textarea", {
       label: opt?.label,
       rows: opt?.rows,
@@ -483,10 +344,135 @@ export class Inputs {
   }
 
   static button<T>(label: string, onClick: () => T): InputVariable<T | null> {
-    this.init();
     return variable(null as T | null).useInput("button", {
       label,
       onClick,
     });
   }
 }
+
+// Register "range" input type
+inputRegistry.register<number>("range", (val, _, opt) => {
+  return val.lit(
+    (value) => html`
+      <label> ${opt?.label} </label>
+      <input
+        type="number"
+        min=${opt?.min ?? 0}
+        max=${opt?.max ?? 100}
+        .value=${String(value)}
+        step=${opt?.step ?? 1}
+        @input=${(e: Event) => {
+          const target = e.target as HTMLInputElement;
+          val.value = Number(target.value);
+        }}
+      />
+      <input
+        type="range"
+        min=${opt?.min ?? 0}
+        max=${opt?.max ?? 100}
+        .value=${String(value)}
+        step=${opt?.step ?? 1}
+        @input=${(e: Event) => {
+          const target = e.target as HTMLInputElement;
+          val.value = Number(target.value);
+        }}
+      />
+    `
+  );
+});
+
+// Register "slider" input type
+inputRegistry.register<number>("slider", (val, _, opt) => {
+  return val.lit(
+    (value) => html`
+      <label>
+        ${opt?.label}
+        ${opt?.showValue !== false ? html`<span>${value}</span>` : nothing}
+        <input
+          type="range"
+          min=${opt?.min ?? 0}
+          max=${opt?.max ?? 100}
+          .value=${String(value)}
+          step=${opt?.step ?? 1}
+          @input=${(e: Event) => {
+            val.value = Number((e.target as HTMLInputElement).value);
+          }}
+        />
+      </label>
+    `
+  );
+});
+
+// Register "radio" input type
+inputRegistry.register<string>("radio", (val, _, opt) => {
+  return val.lit(
+    (value) => html`
+      <label>${opt?.label}</label>
+      <select
+        .value=${value as string}
+        @change=${(e: Event) => {
+          val.value = (e.target as HTMLSelectElement).value;
+        }}
+      >
+        ${opt?.options.map(
+          (option: string) => html`<option value=${option}>${option}</option>`
+        )}
+      </select>
+    `
+  );
+});
+
+// Register "color" input type
+inputRegistry.register<string>("color", (val, _, opt) => {
+  return val.lit(
+    (value) => html`
+      <label>
+        ${opt?.label}
+        <input
+          type="color"
+          .value=${value}
+          @input=${(e: Event) => {
+            val.value = (e.target as HTMLInputElement).value;
+          }}
+        />
+        <span>${value}</span>
+      </label>
+    `
+  );
+});
+
+// Register "textarea" input type
+inputRegistry.register<string>("textarea", (val, _, opt) => {
+  return val.lit(
+    (value) => html`
+      <label>
+        ${opt?.label}
+        <textarea
+          .value=${value}
+          @input=${(e: Event) => {
+            val.value = (e.target as HTMLTextAreaElement).value;
+          }}
+          rows=${opt?.rows ?? 5}
+          cols=${opt?.cols ?? 50}
+        ></textarea>
+      </label>
+    `
+  );
+});
+
+// Register "button" input type
+inputRegistry.register<any>("button", (val, _, opt) => {
+  return val.lit(
+    (value) => html`
+      <button
+        @click=${() => {
+          val.value = opt.onClick();
+        }}
+      >
+        ${opt?.label}
+      </button>
+      ${value !== null ? html`<span>Result: ${value}</span>` : nothing}
+    `
+  );
+});
