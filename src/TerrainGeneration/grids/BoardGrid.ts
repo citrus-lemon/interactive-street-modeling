@@ -1,5 +1,7 @@
 import { Box, Point, Polygon } from "@flatten-js/core";
 
+export type Cell = any;
+
 /**
  * BoardGrid Interface - Core abstraction for spatial grid systems
  *
@@ -39,6 +41,11 @@ export interface BoardGrid<CellRef> {
   getAllCells(): Generator<CellRef, void, unknown>;
 }
 
+export interface BoardLayerReader<T, Board extends BoardGrid<Cell>> {
+  readonly board: Board;
+  get(cell: Cell): T | undefined;
+}
+
 /**
  * BoardLayer - A data layer on top of a board structure
  *
@@ -49,20 +56,25 @@ export interface BoardGrid<CellRef> {
  * Supports lazy initialization - constant default values are not stored
  * until explicitly set, saving memory for sparse data.
  */
-export class BoardLayer<T, CellRef, Board extends BoardGrid<CellRef>> {
+export class BoardLayer<T, Board extends BoardGrid<Cell>>
+  implements BoardLayerReader<T, Board>
+{
   readonly board: Board;
-  readonly data: Map<CellRef, T>;
+  readonly data: Map<Cell, T>;
   private defaultValue?: T;
-  private generator?: (cell: CellRef) => T;
+  private generator?: (cell: Cell, board: Board) => T;
 
-  constructor(board: Board, initializer?: T | ((cell: CellRef) => T)) {
+  constructor(
+    board: Board,
+    initializer?: T | ((cell: Cell, board: Board) => T)
+  ) {
     this.board = board;
-    this.data = new Map<CellRef, T>();
+    this.data = new Map<Cell, T>();
 
     if (initializer !== undefined) {
-      if (typeof initializer === 'function') {
+      if (typeof initializer === "function") {
         // Store generator function for computed values
-        this.generator = initializer as (cell: CellRef) => T;
+        this.generator = initializer as (cell: Cell, board: Board) => T;
         // Eagerly compute values for function initializers
         this.initializeWithGenerator();
       } else {
@@ -82,11 +94,11 @@ export class BoardLayer<T, CellRef, Board extends BoardGrid<CellRef>> {
     if (!cells) return;
 
     for (const cell of cells) {
-      this.data.set(cell, this.generator(cell));
+      this.data.set(cell, this.generator(cell, this.board));
     }
   }
 
-  get(cell: CellRef): T | undefined {
+  get(cell: Cell): T | undefined {
     // Check if value exists in map
     const value = this.data.get(cell);
     if (value !== undefined) {
@@ -97,11 +109,11 @@ export class BoardLayer<T, CellRef, Board extends BoardGrid<CellRef>> {
     return this.defaultValue;
   }
 
-  set(cell: CellRef, value: T): void {
+  set(cell: Cell, value: T): void {
     this.data.set(cell, value);
   }
 
-  has(cell: CellRef): boolean {
+  has(cell: Cell): boolean {
     // Has explicit value or has default value
     return this.data.has(cell) || this.defaultValue !== undefined;
   }
@@ -124,7 +136,7 @@ export class BoardLayer<T, CellRef, Board extends BoardGrid<CellRef>> {
   /**
    * Apply a transformation to all cell values
    */
-  map(fn: (value: T, cell: CellRef) => T): void {
+  map(fn: (value: T, cell: Cell) => T): void {
     // Transform explicit values
     for (const [cell, value] of this.data.entries()) {
       this.data.set(cell, fn(value, cell));
@@ -173,8 +185,8 @@ export class BoardLayer<T, CellRef, Board extends BoardGrid<CellRef>> {
   /**
    * Create a new layer with transformed values
    */
-  transform<U>(fn: (value: T, cell: CellRef) => U): BoardLayer<U, CellRef, Board> {
-    const newLayer = new BoardLayer<U, CellRef, Board>(this.board);
+  transform<U>(fn: (value: T, cell: Cell) => U): BoardLayer<U, Board> {
+    const newLayer = new BoardLayer<U, Board>(this.board);
 
     // Transform explicit values
     for (const [cell, value] of this.data.entries()) {
@@ -200,7 +212,7 @@ export class BoardLayer<T, CellRef, Board extends BoardGrid<CellRef>> {
   /**
    * Iterate over all cell-value pairs
    */
-  *entries(): Generator<[CellRef, T], void, unknown> {
+  *entries(): Generator<[Cell, T], void, unknown> {
     for (const entry of this.data.entries()) {
       yield entry;
     }
@@ -216,7 +228,7 @@ export class BoardLayer<T, CellRef, Board extends BoardGrid<CellRef>> {
   /**
    * Get neighboring values for a cell
    */
-  getNeighborValues(cell: CellRef): T[] {
+  getNeighborValues(cell: Cell): T[] {
     const neighbors = this.board.getNeighbors(cell);
     const values: T[] = [];
 
@@ -230,3 +242,15 @@ export class BoardLayer<T, CellRef, Board extends BoardGrid<CellRef>> {
     return values;
   }
 }
+
+type BoardLayerParameters<T, Board extends BoardGrid<Cell>> = {
+  board: Board;
+  value?: T;
+  initializer?: (cell: Cell, board: Board) => T;
+};
+export const boardLayer = <T, Board extends BoardGrid<Cell>>({
+  board,
+  value,
+  initializer,
+}: BoardLayerParameters<T, Board>) =>
+  new BoardLayer(board, initializer || value);

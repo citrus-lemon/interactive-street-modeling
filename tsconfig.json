@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
-    "lib": ["DOM", "ES2020"],
-    "target": "ES2020",
+    "lib": ["DOM", "ES2023", "ESNext.Iterator"],
+    "target": "ES2023",
     "noEmit": true,
     "skipLibCheck": true,
     "useDefineForClassFields": false,

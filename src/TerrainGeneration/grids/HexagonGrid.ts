@@ -19,12 +19,6 @@ export class HexagonGrid implements BoardGrid<HexagonGridCell> {
   private readonly orientation: "flat" | "pointy";
   private readonly origin: Point;
 
-  // Grid bounds in axial coordinates
-  private readonly qMin: number;
-  private readonly qMax: number;
-  private readonly rMin: number;
-  private readonly rMax: number;
-
   constructor(
     bound: Box,
     hexSize: number,
@@ -34,24 +28,10 @@ export class HexagonGrid implements BoardGrid<HexagonGridCell> {
     this.hexSize = hexSize;
     this.orientation = orientation;
     this.origin = new Point(bound.xmin + hexSize * 2, bound.ymin + hexSize * 2);
-
-    // Calculate grid bounds in axial coordinates
-    const topLeft = this.pixelToAxialRaw(new Point(bound.xmin, bound.ymin));
-    const bottomRight = this.pixelToAxialRaw(new Point(bound.xmax, bound.ymax));
-
-    this.qMin = Math.floor(Math.min(topLeft.q, bottomRight.q)) - 1;
-    this.qMax = Math.ceil(Math.max(topLeft.q, bottomRight.q)) + 1;
-    this.rMin = Math.floor(Math.min(topLeft.r, bottomRight.r)) - 1;
-    this.rMax = Math.ceil(Math.max(topLeft.r, bottomRight.r)) + 1;
   }
 
   getCellAt(point: Point): HexagonGridCell {
-    const axial = this.pixelToAxial(point);
-
-    // Check if within grid bounds and clamp if necessary
-    const q = Math.max(this.qMin, Math.min(axial.q, this.qMax));
-    const r = Math.max(this.rMin, Math.min(axial.r, this.rMax));
-
+    const { q, r } = this.pixelToAxial(point);
     return `${q},${r}`;
   }
 
@@ -74,12 +54,7 @@ export class HexagonGrid implements BoardGrid<HexagonGridCell> {
       const newR = r + dr;
 
       // Check if within grid bounds
-      if (
-        newQ >= this.qMin &&
-        newQ <= this.qMax &&
-        newR >= this.rMin &&
-        newR <= this.rMax
-      ) {
+      if (this.bound.contains(this.axialToPixel(newQ, newR))) {
         neighbors.push(`${newQ},${newR}`);
       }
     }
@@ -99,16 +74,26 @@ export class HexagonGrid implements BoardGrid<HexagonGridCell> {
   }
 
   *getAllCells(): Generator<HexagonGridCell, void, unknown> {
-    for (let q = this.qMin; q <= this.qMax; q++) {
-      for (let r = this.rMin; r <= this.rMax; r++) {
-        // Check if hex center is within bounds
-        const center = this.axialToPixel(q, r);
-        if (
-          center.x >= this.bound.xmin &&
-          center.x <= this.bound.xmax &&
-          center.y >= this.bound.ymin &&
-          center.y <= this.bound.ymax
-        ) {
+    // Calculate grid bounds in axial coordinates
+    const topLeft = this.pixelToAxialRaw(
+      new Point(this.bound.xmin, this.bound.ymin)
+    );
+    const bottomRight = this.pixelToAxialRaw(
+      new Point(this.bound.xmax, this.bound.ymax)
+    );
+    const bottomLeft = this.pixelToAxialRaw(
+      new Point(this.bound.xmin, this.bound.ymax)
+    );
+
+    const qMin = Math.floor(topLeft.q);
+    const qMax = Math.ceil(bottomRight.q);
+    const rMin = Math.floor(topLeft.r);
+    const rMax = Math.ceil(bottomLeft.r);
+    // FIXIT: pointy need to be fix
+    for (let q = qMin; q <= qMax; q++) {
+      const d = Math.floor((q - qMin) / 2);
+      for (let r = rMin - d; r <= rMax - d; r++) {
+        if (this.bound.contains(this.axialToPixel(q, r))) {
           yield `${q},${r}`;
         }
       }
@@ -215,128 +200,15 @@ export class HexagonGrid implements BoardGrid<HexagonGridCell> {
     }
     return [q, r];
   }
-
-  // ============= Utility Methods =============
-
-  /**
-   * Get the distance between two hexagons (in hex steps)
-   */
-  getHexDistance(cell1: HexagonGridCell, cell2: HexagonGridCell): number {
-    const [q1, r1] = this.parseCell(cell1);
-    const [q2, r2] = this.parseCell(cell2);
-
-    // Convert to cube coordinates and calculate Manhattan distance
-    const s1 = -q1 - r1;
-    const s2 = -q2 - r2;
-
-    return (Math.abs(q1 - q2) + Math.abs(r1 - r2) + Math.abs(s1 - s2)) / 2;
-  }
-
-  /**
-   * Get a line of hexagons between two cells
-   */
-  getHexLine(start: HexagonGridCell, end: HexagonGridCell): HexagonGridCell[] {
-    const [q1, r1] = this.parseCell(start);
-    const [q2, r2] = this.parseCell(end);
-
-    const distance = this.getHexDistance(start, end);
-    const line: HexagonGridCell[] = [];
-
-    for (let i = 0; i <= distance; i++) {
-      const t = distance === 0 ? 0 : i / distance;
-      const q = Math.round(q1 + (q2 - q1) * t);
-      const r = Math.round(r1 + (r2 - r1) * t);
-      line.push(`${q},${r}`);
-    }
-
-    return line;
-  }
-
-  /**
-   * Get all hexagons within a certain distance from a center hex
-   */
-  getHexesInRange(center: HexagonGridCell, range: number): HexagonGridCell[] {
-    const [q, r] = this.parseCell(center);
-    const hexes: HexagonGridCell[] = [];
-
-    for (let dq = -range; dq <= range; dq++) {
-      for (
-        let dr = Math.max(-range, -dq - range);
-        dr <= Math.min(range, -dq + range);
-        dr++
-      ) {
-        const newQ = q + dq;
-        const newR = r + dr;
-
-        if (
-          newQ >= this.qMin &&
-          newQ <= this.qMax &&
-          newR >= this.rMin &&
-          newR <= this.rMax
-        ) {
-          hexes.push(`${newQ},${newR}`);
-        }
-      }
-    }
-
-    return hexes;
-  }
-
-  /**
-   * Get ring of hexagons at exact distance from center
-   */
-  getHexRing(center: HexagonGridCell, radius: number): HexagonGridCell[] {
-    if (radius === 0) return [center];
-
-    const [q, r] = this.parseCell(center);
-    const ring: HexagonGridCell[] = [];
-
-    // Start from a corner and walk around the ring
-    let hex = { q: q - radius, r: r + radius };
-
-    const directions = [
-      [+1, -1],
-      [+1, 0],
-      [0, +1],
-      [-1, +1],
-      [-1, 0],
-      [0, -1],
-    ];
-
-    for (const [dq, dr] of directions) {
-      for (let i = 0; i < radius; i++) {
-        if (
-          hex.q >= this.qMin &&
-          hex.q <= this.qMax &&
-          hex.r >= this.rMin &&
-          hex.r <= this.rMax
-        ) {
-          ring.push(`${hex.q},${hex.r}`);
-        }
-        hex.q += dq;
-        hex.r += dr;
-      }
-    }
-
-    return ring;
-  }
-
-  // ============= Grid Information =============
-
-  getHexSize(): number {
-    return this.hexSize;
-  }
-
-  getOrientation(): "flat" | "pointy" {
-    return this.orientation;
-  }
-
-  getGridBounds(): { qMin: number; qMax: number; rMin: number; rMax: number } {
-    return {
-      qMin: this.qMin,
-      qMax: this.qMax,
-      rMin: this.rMin,
-      rMax: this.rMax,
-    };
-  }
 }
+
+type HexagonGridParameters = {
+  bound: Box;
+  cellSize: number;
+  orientation?: "flat" | "pointy";
+};
+export const hexagonGrid = ({
+  bound,
+  cellSize,
+  orientation,
+}: HexagonGridParameters) => new HexagonGrid(bound, cellSize, orientation);
