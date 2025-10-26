@@ -9,8 +9,6 @@ export type Cell = any;
  * from simple rectangular grids to complex irregular tessellations (Voronoi, hexagonal, etc.).
  */
 export interface BoardGrid<CellRef> {
-  readonly bound: Box;
-
   /*
   any point inside the bound should have a cell
    */
@@ -38,7 +36,7 @@ export interface BoardGrid<CellRef> {
   /**
    * Iterate over all cells in the board.
    */
-  getAllCells(): Generator<CellRef, void, unknown>;
+  getAllCells(): Iterable<CellRef>;
 }
 
 export interface BoardLayerReader<T, Board extends BoardGrid<Cell>> {

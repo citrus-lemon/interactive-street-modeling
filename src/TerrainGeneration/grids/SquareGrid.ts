@@ -73,7 +73,7 @@ export class SquareGrid implements BoardGrid<SquareGridCell> {
     );
   }
 
-  *getAllCells(): Generator<SquareGridCell, void, unknown> {
+  *getAllCells() {
     const [xxmin, xxmax, yymin, yymax] = [
       Math.floor((this.bound.xmin - this.origin.x) / this.cellSize + 0.5),
       Math.ceil((this.bound.xmax - this.origin.x) / this.cellSize + 0.5),

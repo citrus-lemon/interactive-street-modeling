@@ -12,6 +12,7 @@
   "devDependencies": {
     "@rsbuild/core": "^1.2.16",
     "@rslib/core": "^0.13.2",
+    "@types/d3": "^7.4.3",
     "@types/lodash": "^4.17.20",
     "@types/poisson-disk-sampling": "^2.2.4",
     "@types/seed-random": "^2.2.4",

@@ -73,7 +73,7 @@ export class HexagonGrid implements BoardGrid<HexagonGridCell> {
     return new Polygon(corners);
   }
 
-  *getAllCells(): Generator<HexagonGridCell, void, unknown> {
+  *getAllCells() {
     // Calculate grid bounds in axial coordinates
     const topLeft = this.pixelToAxialRaw(
       new Point(this.bound.xmin, this.bound.ymin)
