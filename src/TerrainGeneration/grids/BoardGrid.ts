@@ -1,4 +1,4 @@
-import { Box, Point, Polygon } from "@flatten-js/core";
+import { Point, Polygon } from "@flatten-js/core";
 
 export type Cell = any;
 
