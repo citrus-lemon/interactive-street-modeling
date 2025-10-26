@@ -31,4 +31,7 @@ export default defineConfig({
       ),
     },
   },
+  output: {
+    assetPrefix: "/interactive-street-modeling/",
+  },
 });
