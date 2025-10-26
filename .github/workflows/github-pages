@@ -4,7 +4,7 @@ name: Rsbuild Deployment
 on:
   # Runs on pushes targeting the default branch
   push:
-    branches: ['main']
+    branches: ['master']
   # Allows you to run this workflow manually from the actions tab
   workflow_dispatch:
 
@@ -35,10 +35,10 @@ jobs:
       # If you use other package managers like yarn or pnpm,
       # you will need to install them first
       - name: Install dependencies
-        run: npm i
+        run: npm i -g yarn && yarn
 
       - name: Build
-        run: npm run build
+        run: yarn build
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
