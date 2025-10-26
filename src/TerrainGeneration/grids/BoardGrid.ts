@@ -36,12 +36,15 @@ export interface BoardGrid<CellRef> {
   /**
    * Iterate over all cells in the board.
    */
-  getAllCells(): Iterable<CellRef>;
+  getAllCells(): IteratorObject<CellRef>;
 }
 
-export interface BoardLayerReader<T, Board extends BoardGrid<Cell>> {
+export interface BoardLayerReader<
+  T,
+  Board extends BoardGrid<Cell> = BoardGrid<Cell>
+> {
   readonly board: Board;
-  get(cell: Cell): T | undefined;
+  get(cell: Cell): T;
 }
 
 /**
@@ -54,11 +57,12 @@ export interface BoardLayerReader<T, Board extends BoardGrid<Cell>> {
  * Supports lazy initialization - constant default values are not stored
  * until explicitly set, saving memory for sparse data.
  */
-export class BoardLayer<T, Board extends BoardGrid<Cell>>
+export class BoardLayer<T, Board extends BoardGrid<Cell> = BoardGrid<Cell>>
   implements BoardLayerReader<T, Board>
 {
   readonly board: Board;
   readonly data: Map<Cell, T>;
+  name: string = "unnamed layer";
   private defaultValue?: T;
   private generator?: (cell: Cell, board: Board) => T;
 
@@ -96,7 +100,7 @@ export class BoardLayer<T, Board extends BoardGrid<Cell>>
     }
   }
 
-  get(cell: Cell): T | undefined {
+  get(cell: Cell): T {
     // Check if value exists in map
     const value = this.data.get(cell);
     if (value !== undefined) {
@@ -104,7 +108,7 @@ export class BoardLayer<T, Board extends BoardGrid<Cell>>
     }
 
     // Return default value if set (lazy evaluation)
-    return this.defaultValue;
+    return this.defaultValue as T;
   }
 
   set(cell: Cell, value: T): void {
@@ -239,16 +243,27 @@ export class BoardLayer<T, Board extends BoardGrid<Cell>>
 
     return values;
   }
+
+  setName(newName?: string): this {
+    if (newName !== undefined) this.name = newName;
+    return this;
+  }
+
+  toString() {
+    return this.name;
+  }
 }
 
 type BoardLayerParameters<T, Board extends BoardGrid<Cell>> = {
   board: Board;
   value?: T;
+  layerName?: string;
   initializer?: (cell: Cell, board: Board) => T;
 };
 export const boardLayer = <T, Board extends BoardGrid<Cell>>({
   board,
   value,
+  layerName,
   initializer,
 }: BoardLayerParameters<T, Board>) =>
-  new BoardLayer(board, initializer || value);
+  new BoardLayer(board, initializer || value).setName(layerName);

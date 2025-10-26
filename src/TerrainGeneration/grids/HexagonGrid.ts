@@ -200,6 +200,10 @@ export class HexagonGrid implements BoardGrid<HexagonGridCell> {
     }
     return [q, r];
   }
+
+  toString() {
+    return `HexagonBoard`;
+  }
 }
 
 type HexagonGridParameters = {

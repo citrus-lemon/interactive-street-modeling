@@ -95,6 +95,10 @@ export class SquareGrid implements BoardGrid<SquareGridCell> {
     }
     return [row, col];
   }
+
+  toString() {
+    return `SquareBoard`;
+  }
 }
 
 type SquareGridParameters = {

@@ -132,6 +132,10 @@ export class VoronoiGrid implements BoardGrid<DelaunayPoint> {
   getAllCells() {
     return Array(this.delaunay.points.length / 2).keys();
   }
+
+  toString() {
+    return `VoronoiBoard[${this.delaunay.points.length >> 1}]`;
+  }
 }
 
 /**
@@ -179,6 +183,12 @@ export class DelaunayGrid implements BoardGrid<DelaunayTriangle> {
 
   getAllCells() {
     return Array(this.voronoiGrid.delaunay.triangles.length / 3).keys();
+  }
+
+  toString() {
+    return `TriangleBoard[${Math.floor(
+      this.voronoiGrid.delaunay.triangles.length / 3
+    )}]`;
   }
 }
 
